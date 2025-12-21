@@ -37,6 +37,7 @@
 <!-- **Note:** This open-source repository is intended to provide a reference implementation. Due to the difference in the underlying I2V model's performance, the open-source version may not achieve the same performance as the model in our paper.  -->
 
 ## 🔥 Updates
+- __[2025.12.22]__: Added **Gradio WebUI** for easy video generation and **NVIDIA DGX Spark** support with flash-attn fallback.
 - __[2025.12.14]__: Training and inference code, [model checkpoints](https://huggingface.co/KlingTeam/MemFlow) are available.
 <!-- - __[2025.09.25]__: [CamCloneMaster](https://arxiv.org/abs/2506.03140) has been accepted by SIGGRAPH Aisa 2025. -->
 <!-- - __[2025.09.08]__: [CameraClone Dataset](https://huggingface.co/datasets/KwaiVGI/CameraClone-Dataset/) is avaliable. -->
@@ -82,10 +83,12 @@ Memflow supports real-time generation with 18.7 FPS on a single H100 GPU, sacrif
 **Requirements**
 
 We tested this repo on the following setup:
-* Nvidia GPU with 80 GB memory (A100, and A800 are tested).
+* Nvidia GPU with 80 GB memory (A100, A800, and **DGX Spark** are tested).
 * Linux operating system.
 
 Other hardware setup could also work but hasn't been tested.
+
+**Note:** DGX Spark and other systems without flash-attn support are now supported via automatic fallback to standard attention.
 
 **Environment**
 
@@ -99,7 +102,17 @@ conda install nvidia/label/cuda-12.4.1::cuda
 conda install -c nvidia/label/cuda-12.4.1 cudatoolkit
 pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
-pip install flash-attn --no-build-isolation
+pip install gradio
+pip install flash-attn --no-build-isolation  # Optional: skip this on DGX Spark
+```
+
+**For DGX Spark / Systems without flash-attn:**
+
+If `flash-attn` installation fails (common on DGX Spark), you can skip it. The code will automatically fall back to standard attention:
+```
+pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+pip install -r requirements.txt
+pip install gradio
 ```
 
 ## 🧱 Download Checkpoints
@@ -115,6 +128,35 @@ or using git:
 git lfs install
 git clone https://huggingface.co/KlingTeam/MemFlow
 ```
+
+## 🖥️ WebUI (Gradio)
+
+Launch the interactive WebUI for easy video generation:
+
+```bash
+# Basic launch
+python webui.py
+
+# With auto model loading
+python webui.py --autoload
+
+# With public sharing link
+python webui.py --share
+
+# Custom host/port
+python webui.py --host 0.0.0.0 --port 7860
+```
+
+**Options:**
+- `--host`: Host address (default: `0.0.0.0`)
+- `--port`: Port number (default: `7860`)
+- `--share`: Create a public Gradio link
+- `--config`: Config file path (default: `configs/inference.yaml`)
+- `--autoload`: Automatically load the model on startup
+
+After launching, open `http://localhost:7860` in your browser.
+
+**Note:** For NVIDIA DGX Spark or systems without flash-attn support, the WebUI automatically falls back to standard attention.
 
 ## 🔑 Inference
 <!-- **Download checkpoints** -->
