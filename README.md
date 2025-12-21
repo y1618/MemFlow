@@ -1,6 +1,9 @@
+**This repository provides a customized variant featuring an independently developed WebUI and support for NVIDIA DGX Spark.**
+
 <p align="center" >
     <img src="assets/logo.png"  width="30%" >
 </p>
+**A customized version with independent WebUI integration and NVIDIA DGX Spark compatibility.**
 
 # <div align="center" >Flowing Adaptive Memory for Consistent and Efficient Long Video Narratives<div align="center">
 
