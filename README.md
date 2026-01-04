@@ -83,40 +83,37 @@ Memflow supports real-time generation with 18.7 FPS on a single H100 GPU, sacrif
 - [x] Training code -->
 
 ## 🛠️ Installation
+
 **Requirements**
 
 We tested this repo on the following setup:
-* Nvidia GPU with 80 GB memory (A100, A800, and **DGX Spark** are tested).
+* Nvidia GPU with 80 GB memory (A100, A800, and **NVIDIA DGX Spark GB10** are tested).
 * Linux operating system.
+* Docker and Docker Compose (recommended)
 
 Other hardware setup could also work but hasn't been tested.
 
-**Note:** DGX Spark and other systems without flash-attn support are now supported via automatic fallback to standard attention.
+**Note:** This version includes **flash-attention v2.8.3** built from source with compute capability 12.1 (sm_121) support for **NVIDIA DGX Spark (GB10)** and other modern GPU architectures.
 
-**Environment**
+## 🐳 Docker Installation (Recommended)
 
-Create a conda environment and install dependencies:
-```
-git clone https://github.com/KlingTeam/MemFlow
+The easiest way to get started is using Docker, which includes all dependencies and flash-attention pre-built:
+
+```bash
+git clone https://github.com/your-username/MemFlow
 cd MemFlow
-conda create -n memflow python=3.10 -y
-conda activate memflow
-conda install nvidia/label/cuda-12.4.1::cuda
-conda install -c nvidia/label/cuda-12.4.1 cudatoolkit
-pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
-pip install gradio
-pip install flash-attn --no-build-isolation  # Optional: skip this on DGX Spark
+
+# Build and run with docker-compose
+docker-compose -f docker/docker-compose.yml up --build
 ```
 
-**For DGX Spark / Systems without flash-attn:**
+The container will:
+- Build flash-attention v2.8.3 from source for your GPU architecture (including DGX Spark GB10)
+- Install all required dependencies
+- Mount `checkpoints/`, `wan_models/`, and `outputs/` directories
+- Expose the WebUI on port 7860
 
-If `flash-attn` installation fails (common on DGX Spark), you can skip it. The code will automatically fall back to standard attention:
-```
-pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
-pip install gradio
-```
+Access the WebUI at `http://localhost:7860`
 
 ## 🧱 Download Checkpoints
 

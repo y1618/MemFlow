@@ -1,0 +1,33 @@
+services:
+  memflow:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: memflow:25.12
+    container_name: memflow
+    ports:
+      - "7860:7860"
+
+    ipc: host
+    shm_size: "16gb"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+
+    deploy:
+      resources:
+        limits:
+          memory: 90GB
+        reservations:
+          devices:
+            - capabilities: [gpu]
+
+    volumes:
+      - ../checkpoints:/workspace/MemFlow/checkpoints
+      - ../wan_models:/workspace/MemFlow/wan_models
+      - ../outputs:/workspace/MemFlow/outputs
+
+    environment:
+      MEMFLOW_HOST: "0.0.0.0"
+      MEMFLOW_PORT: "7860"
+
