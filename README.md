@@ -1,9 +1,10 @@
-**This repository provides a customized variant featuring an independently developed WebUI and support for NVIDIA DGX Spark.**
+**This repository is forked from [shi3z/MemFlow](https://github.com/shi3z/MemFlow), which is based on the original [KlingTeam/MemFlow](https://github.com/KlingTeam/MemFlow).**
+
+**This variant features Docker support with NVIDIA DGX Spark GB10 compatibility and flash-attention v2.8.3 built from source.**
 
 <p align="center" >
     <img src="assets/logo.png"  width="30%" >
 </p>
-**A customized version with independent WebUI integration and NVIDIA DGX Spark compatibility.**
 
 # <div align="center" >Flowing Adaptive Memory for Consistent and Efficient Long Video Narratives<div align="center">
 
@@ -87,7 +88,7 @@ Memflow supports real-time generation with 18.7 FPS on a single H100 GPU, sacrif
 **Requirements**
 
 We tested this repo on the following setup:
-* Nvidia GPU with 80 GB memory (A100, A800, and **NVIDIA DGX Spark GB10** are tested).
+* Nvidia GPU with 80 GB memory (**NVIDIA DGX Spark GB10** are tested).
 * Linux operating system.
 * Docker and Docker Compose (recommended)
 
@@ -100,11 +101,11 @@ Other hardware setup could also work but hasn't been tested.
 The easiest way to get started is using Docker, which includes all dependencies and flash-attention pre-built:
 
 ```bash
-git clone https://github.com/your-username/MemFlow
+git clone https://github.com/y1618/MemFlow
 cd MemFlow
 
-# Build and run with docker-compose
-docker-compose -f docker/docker-compose.yml up --build
+# Build and run with docker compose
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 The container will:
@@ -119,14 +120,9 @@ Access the WebUI at `http://localhost:7860`
 
 Download models using huggingface-cli:
 ``` sh
-pip install "huggingface_hub[cli]"
+docker exec -it memflow /bin/bash
 huggingface-cli download Wan-AI/Wan2.1-T2V-1.3B --local-dir wan_models/Wan2.1-T2V-1.3B
 huggingface-cli download KlingTeam/MemFlow --local-dir checkpoints
-```
-or using git:
-``` sh
-git lfs install
-git clone https://huggingface.co/KlingTeam/MemFlow
 ```
 
 ## 🖥️ WebUI (Gradio)
@@ -211,6 +207,8 @@ The `bank_size` is a tunable hyperparameter specified in [`configs/train_init.ya
 - Make a pull request when finished modifying the project. -->
 
 ## 🤗 Acknowledgement
+- [KlingTeam/MemFlow](https://github.com/KlingTeam/MemFlow): the original MemFlow repository. Thanks for their amazing research and implementation.
+- [shi3z/MemFlow](https://github.com/shi3z/MemFlow): the fork we built upon with WebUI and DGX Spark support. Thanks for their excellent work.
 - [LongLive](https://github.com/NVlabs/LongLive): the codebase we built upon. Thanks for their wonderful work.
 - [Self-Forcing](https://github.com/guandeh17/Self-Forcing): the algorithm we built upon. Thanks for their wonderful work.
 - [Wan](https://github.com/Wan-Video/Wan2.1): the base model we built upon. Thanks for their wonderful work.
