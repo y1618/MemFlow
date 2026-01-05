@@ -6,11 +6,23 @@ Streaming video generation with adaptive memory
 import argparse
 import os
 import tempfile
+import gc
+
+# Set PyTorch thread limits before importing torch
+# This reduces CPU usage during GPU inference
+os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '4'
+
 import torch
+import ffmpeg
+import numpy as np
 from omegaconf import OmegaConf
 from einops import rearrange
-from torchvision.io import write_video
 import gradio as gr
+
+# Set PyTorch thread limits
+torch.set_num_threads(4)
+torch.set_num_interop_threads(2)
 
 # Import MemFlow components
 from pipeline import CausalInferencePipeline
@@ -140,20 +152,70 @@ def generate_video(
             low_memory=low_memory,
         )
 
-        progress(0.9, desc="Processing output...")
+        progress(0.9, desc="Encoding video with NVENC...")
 
         # Process video
         current_video = rearrange(video, 'b t c h w -> b t h w c').cpu()
-        video_output = 255.0 * current_video
+        video_output = (255.0 * current_video).clamp(0, 255).to(torch.uint8)
 
-        # Clear VAE cache
-        pipeline.vae.model.clear_cache()
+        # Convert to numpy for ffmpeg
+        frames_np = video_output[0].numpy()  # Shape: (T, H, W, C)
+        height, width = frames_np.shape[1], frames_np.shape[2]
 
-        # Save to temporary file
+        # Save to temporary file using NVENC hardware encoder
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as f:
             output_path = f.name
 
-        write_video(output_path, video_output[0].to(torch.uint8), fps=16)
+        # Use ffmpeg with NVENC hardware acceleration
+        # Convert all frames to bytes at once (more efficient)
+        video_bytes = frames_np.tobytes()
+
+        try:
+            process = (
+                ffmpeg
+                .input('pipe:', format='rawvideo', pix_fmt='rgb24',
+                       s=f'{width}x{height}', framerate=16)
+                .output(output_path, vcodec='h264_nvenc', pix_fmt='yuv420p',
+                        preset='p4', cq=23, rc='vbr')
+                .overwrite_output()
+                .run_async(pipe_stdin=True, pipe_stderr=True)
+            )
+
+            # Write all frames at once
+            process.stdin.write(video_bytes)
+            process.stdin.close()
+            stderr_output = process.stderr.read().decode('utf-8', errors='ignore')
+            return_code = process.wait()
+
+            if return_code != 0:
+                print(f"ffmpeg stderr:\n{stderr_output}")
+                raise RuntimeError(f"ffmpeg encoding failed with return code {return_code}")
+
+        except Exception as e:
+            if 'process' in locals():
+                try:
+                    process.kill()
+                except:
+                    pass
+            print(f"NVENC encoding error: {str(e)}")
+            raise e
+
+        # Clean up GPU memory
+        # 1. Clear VAE cache
+        pipeline.vae.model.clear_cache()
+
+        # 2. Delete large tensors explicitly
+        del video, latents, sampled_noise, current_video, video_output
+
+        # 3. Clear KV cache
+        pipeline.clear_kv_cache()
+
+        # 4. Force CUDA cache cleanup
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        # 5. Force Python garbage collection
+        gc.collect()
 
         progress(1.0, desc="Done!")
         return output_path, f"Video generated successfully! Seed: {seed}"
@@ -162,6 +224,12 @@ def generate_video(
         import traceback
         error_msg = traceback.format_exc()
         print(f"Error during generation:\n{error_msg}")
+
+        # Clean up on error as well
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
+
         return None, f"Error: {str(e)}\n\n{error_msg}"
 
 

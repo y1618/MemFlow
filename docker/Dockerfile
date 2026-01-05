@@ -29,11 +29,13 @@ RUN python -V && pip --version \
  && pip install "huggingface_hub[cli]" gradio
 
 # ---- flash-attn: ソースからwheelを作って入れる（GB10 / sm121 対応のため）----
-# GB10は compute capability 12.1 (sm_121) なのでアーキ指定 :contentReference[oaicite:2]{index=2}
+# GB10は compute capability 12.1 (sm_121) なのでアーキ指定
+# flash-attentionビルドはメモリを大量消費（1ジョブあたり10-15GB）
+# DGX Spark 128GBメモリでは MAX_JOBS=4 が最適
 ARG FLASH_ATTN_VERSION="v2.8.3"
 ENV TORCH_CUDA_ARCH_LIST="12.1" \
-    MAX_JOBS=1 \
-    NVCC_THREADS=1 \
+    MAX_JOBS=4 \
+    NVCC_THREADS=2 \
     FLASH_ATTENTION_FORCE_BUILD=TRUE
 
 RUN git clone --depth 1 --branch ${FLASH_ATTN_VERSION} https://github.com/Dao-AILab/flash-attention.git /tmp/flash-attn \

@@ -38,3 +38,4 @@ flask
 flask-socketio
 torchao
 peft
+ffmpeg-python
